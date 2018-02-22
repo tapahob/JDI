@@ -24,8 +24,8 @@ import com.epam.jdi.uitests.core.interfaces.complex.tables.interfaces.CheckPageT
 import com.epam.jdi.uitests.core.settings.Layout;
 import com.epam.jdi.uitests.web.selenium.elements.base.BaseElement;
 import com.epam.jdi.uitests.web.settings.WebSettings;
+import io.qameta.allure.Step;
 import org.openqa.selenium.Cookie;
-import ru.yandex.qatools.allure.annotations.Step;
 
 import java.text.MessageFormat;
 import java.util.function.Supplier;

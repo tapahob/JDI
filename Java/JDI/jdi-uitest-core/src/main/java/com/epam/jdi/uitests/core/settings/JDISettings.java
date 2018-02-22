@@ -21,8 +21,13 @@ import com.epam.jdi.uitests.core.interfaces.IAsserter;
 import com.epam.jdi.uitests.core.interfaces.settings.IDriver;
 import com.epam.jdi.uitests.core.logger.ILogger;
 import com.epam.jdi.uitests.core.logger.LogLevels;
+import io.qameta.allure.Allure;
+import io.qameta.allure.AllureLifecycle;
+import io.qameta.allure.FileSystemResultsWriter;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
 
 import static com.epam.commons.PropertyReader.fillAction;
 import static com.epam.jdi.uitests.core.settings.JDIPropertiesReader.getProperties;
@@ -81,7 +86,7 @@ public abstract class JDISettings {
         fillAction(driverFactory::setRunType, "run.type");
         fillAction(driverFactory::setRemoteHubUrl, "remote.url");
         fillAction(driverFactory::registerDriver, "driver");
-        // fillAction(p -> timeouts.waitPageLoadSec = parseInt(p), "timeout.wait.pageLoad");
+        setAllureDefaultDirectory("target/allure-results");
     }
 
     public static void initFromProperties(String propertyPath) throws IOException {
@@ -90,5 +95,18 @@ public abstract class JDISettings {
     }
     public static RuntimeException exception(String msg, Object... args) {
         return asserter.exception(msg, args);
+    }
+
+    public static void setAllureDefaultDirectory(String resultsDirectory) {
+        final String ALLURE_RESULTS_DIR_PROPERTY = "allure.results.directory";
+        String currentResultsDirectory = System.getProperty(ALLURE_RESULTS_DIR_PROPERTY, "");
+        try {
+            Field writerField = AllureLifecycle.class.getDeclaredField("writer");
+            writerField.setAccessible(true);
+            writerField.set(Allure.getLifecycle(), new FileSystemResultsWriter(Paths.get(
+                    currentResultsDirectory.equals("") ? resultsDirectory : currentResultsDirectory)));
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
     }
 }

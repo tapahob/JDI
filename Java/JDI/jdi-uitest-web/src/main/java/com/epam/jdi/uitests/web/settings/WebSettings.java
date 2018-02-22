@@ -38,16 +38,21 @@ import com.epam.jdi.uitests.web.selenium.elements.complex.*;
 import com.epam.jdi.uitests.web.selenium.elements.complex.table.Table;
 import com.epam.jdi.uitests.web.testng.testRunner.TestNGLogger;
 import com.epam.web.matcher.base.BaseMatcher;
+import io.qameta.allure.Allure;
+import io.qameta.allure.AllureLifecycle;
+import io.qameta.allure.internal.AllureStorage;
+import io.qameta.allure.listener.*;
+import io.qameta.allure.model.Stage;
+import io.qameta.allure.model.Status;
+import io.qameta.allure.model.StepResult;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import ru.yandex.qatools.allure.events.StepFinishedEvent;
-import ru.yandex.qatools.allure.events.StepStartedEvent;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
+import java.lang.reflect.Field;
+import java.util.*;
 import java.util.function.Supplier;
 
 import static com.epam.commons.PropertyReader.fillAction;
@@ -60,7 +65,6 @@ import static com.epam.web.matcher.base.BaseMatcher.setLogAction;
 import static com.epam.web.matcher.testng.Assert.setMatcher;
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
-import static ru.yandex.qatools.allure.Allure.LIFECYCLE;
 
 /**
  * Created by Roman_Iovlev on 11/13/2015.
@@ -155,12 +159,40 @@ public class WebSettings extends JDISettings {
         }, "browser.size");
         fillAction(p -> pageLoadStrategy = p, "page.load.strategy");
         initialized = true;
+
+
+
         setLogAction(s -> {
-            LIFECYCLE.fire(new StepStartedEvent(s));
+            AllureStorage storage = getAllureInternalStorage();
+            if (storage == null) {
+                logger.step(s);
+                return;
+            }
+            String currentStepUUID = storage.getCurrentStep().get();
+            StepResult newStepResult = new StepResult()
+                    .withName(s)
+                    .withStage(Stage.RUNNING)
+                    .withStatus(Status.PASSED)
+                    .withStart(new Date().getTime())
+                    .withStop(new Date().getTime());
+            String newStepUUID = UUID.randomUUID().toString();
+            storage.addStep(currentStepUUID, newStepUUID, newStepResult);
             logger.step(s);
-            LIFECYCLE.fire(new StepFinishedEvent());
+            Allure.getLifecycle().stopStep(newStepUUID);
         });
         JDISettings.initFromProperties();
+    }
+
+    private static AllureStorage getAllureInternalStorage() {
+        AllureLifecycle lifecycle = Allure.getLifecycle();
+        try {
+            Field storageField = lifecycle.getClass().getDeclaredField("storage");
+            storageField.setAccessible(true);
+            return (AllureStorage) storageField.get(lifecycle);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private static Object[][] defaultInterfacesMap = new Object[][]{

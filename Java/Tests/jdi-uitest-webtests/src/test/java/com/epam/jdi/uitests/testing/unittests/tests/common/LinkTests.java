@@ -4,6 +4,8 @@ import com.epam.jdi.uitests.core.interfaces.common.ILink;
 import com.epam.jdi.uitests.testing.unittests.InitTests;
 import com.epam.jdi.uitests.testing.unittests.tests.complex.CommonActionsData;
 import com.epam.web.matcher.testng.Assert;
+import io.qameta.allure.AllureResultsWriter;
+import io.qameta.allure.Step;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Factory;
 import org.testng.annotations.Test;
@@ -38,7 +40,9 @@ public class LinkTests extends InitTests {
     }
 
     @Test
+    @Step("#### Debugging step!")
     public void getReferenceTest() {
+        logger.step("Hello from logger.step!");
         areEquals(link().getReference(), supportPage.url);
     }
 
