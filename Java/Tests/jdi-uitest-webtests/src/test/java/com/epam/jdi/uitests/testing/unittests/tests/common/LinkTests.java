@@ -40,7 +40,6 @@ public class LinkTests extends InitTests {
     }
 
     @Test
-    @Step("#### Debugging step!")
     public void getReferenceTest() {
         logger.step("Hello from logger.step!");
         areEquals(link().getReference(), supportPage.url);

@@ -9,7 +9,7 @@ package com.epam.jdi.uitests.web.settings;
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * JDI is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+ * JDI is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
  *
@@ -38,21 +38,14 @@ import com.epam.jdi.uitests.web.selenium.elements.complex.*;
 import com.epam.jdi.uitests.web.selenium.elements.complex.table.Table;
 import com.epam.jdi.uitests.web.testng.testRunner.TestNGLogger;
 import com.epam.web.matcher.base.BaseMatcher;
-import io.qameta.allure.Allure;
-import io.qameta.allure.AllureLifecycle;
-import io.qameta.allure.internal.AllureStorage;
-import io.qameta.allure.listener.*;
-import io.qameta.allure.model.Stage;
-import io.qameta.allure.model.Status;
-import io.qameta.allure.model.StepResult;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import static com.epam.commons.PropertyReader.fillAction;
@@ -72,6 +65,7 @@ import static java.util.Arrays.asList;
 public class WebSettings extends JDISettings {
     public static String domain;
     public static String killBrowser;
+
     public static boolean hasDomain() {
         return domain != null && domain.contains("://");
     }
@@ -93,19 +87,25 @@ public class WebSettings extends JDISettings {
     public static String useDriver(Supplier<WebDriver> driver) {
         return getDriverFactory().registerDriver(driver);
     }
+
     public static String useDriver(String name, Supplier<WebDriver> driver) {
         return getDriverFactory().registerDriver(name, driver);
     }
+
     public static JavascriptExecutor getJSExecutor() {
         if (!initialized)
-            try { initFromProperties(); } catch (Exception ex) { throw new RuntimeException(ex); }
+            try {
+                initFromProperties();
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
         if (driverFactory.getDriver() instanceof JavascriptExecutor)
             return (JavascriptExecutor) driverFactory.getDriver();
         else
             throw new ClassCastException("JavaScript Executor doesn't support");
     }
 
-    public static synchronized void init() throws IOException {
+    public static synchronized void init() {
         logger = new TestNGLogger("JDI Logger");
         asserter = new TestNGCheck().setUpLogger(logger);
         setMatcher((BaseMatcher) asserter);
@@ -115,6 +115,7 @@ public class WebSettings extends JDISettings {
         MapInterfaceToElement.init(defaultInterfacesMap);
         driverFactory = new SeleniumDriverFactory();
     }
+
     public static boolean initialized = false;
 
     public static synchronized void initFromProperties() throws IOException {
@@ -126,7 +127,7 @@ public class WebSettings extends JDISettings {
         fillAction(p -> platform = p, "os.platform");
         fillAction(p -> driverVersion =
                 p.toLowerCase().equals("true") || p.toLowerCase().equals("1")
-                ? "latest" : "none", "driver.getLatest");
+                        ? "latest" : "none", "driver.getLatest");
         fillAction(p -> asserter.doScreenshot(p), "screenshot.strategy");
         killBrowser = "afterAndBefore";
         fillAction(p -> killBrowser = p, "browser.kill");
@@ -147,7 +148,7 @@ public class WebSettings extends JDISettings {
                 if (params.contains("multiple"))
                     onlyOneElementAllowedInSearch = false;
             }
-        }, "search.element.strategy" );
+        }, "search.element.strategy");
         fillAction(p -> {
             String[] split = null;
             if (p.split(",").length == 2)
@@ -159,41 +160,11 @@ public class WebSettings extends JDISettings {
         }, "browser.size");
         fillAction(p -> pageLoadStrategy = p, "page.load.strategy");
         initialized = true;
-
-
-
-        setLogAction(s -> {
-            AllureStorage storage = getAllureInternalStorage();
-            if (storage == null) {
-                logger.step(s);
-                return;
-            }
-            String currentStepUUID = storage.getCurrentStep().get();
-            StepResult newStepResult = new StepResult()
-                    .withName(s)
-                    .withStage(Stage.RUNNING)
-                    .withStatus(Status.PASSED)
-                    .withStart(new Date().getTime())
-                    .withStop(new Date().getTime());
-            String newStepUUID = UUID.randomUUID().toString();
-            storage.addStep(currentStepUUID, newStepUUID, newStepResult);
-            logger.step(s);
-            Allure.getLifecycle().stopStep(newStepUUID);
-        });
+        setLogAction(logger::step);
         JDISettings.initFromProperties();
     }
 
-    private static AllureStorage getAllureInternalStorage() {
-        AllureLifecycle lifecycle = Allure.getLifecycle();
-        try {
-            Field storageField = lifecycle.getClass().getDeclaredField("storage");
-            storageField.setAccessible(true);
-            return (AllureStorage) storageField.get(lifecycle);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
+
 
     private static Object[][] defaultInterfacesMap = new Object[][]{
             {IElement.class, Element.class},

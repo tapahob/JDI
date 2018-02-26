@@ -2,12 +2,18 @@ package com.epam.jdi.uitests.core.logger;
 
 import com.epam.commons.linqinterfaces.JActionEx;
 import com.epam.commons.linqinterfaces.JFuncREx;
+import io.qameta.allure.Allure;
+import io.qameta.allure.model.Stage;
+import io.qameta.allure.model.Status;
+import io.qameta.allure.model.StepResult;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import static com.epam.jdi.uitests.core.logger.LogLevels.*;
 import static java.lang.Thread.currentThread;
@@ -320,6 +326,15 @@ public class JDILogger implements ILogger {
     public void step(String s) {
         if (logLevel.equalOrLessThan(STEP))
             logger.info(stepMarker, getRecord(s));
+
+        StepResult newStepResult = new StepResult()
+                .withName(s)
+                .withStage(Stage.FINISHED)
+                .withStatus(Status.PASSED)
+                .withStart(new Date().getTime());
+        String newStepUUID = UUID.randomUUID().toString();
+        Allure.getLifecycle().startStep(newStepUUID, newStepResult);
+        Allure.getLifecycle().stopStep(newStepUUID);
     }
 
     public boolean isErrorEnabled() {
